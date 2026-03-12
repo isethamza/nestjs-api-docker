@@ -1,0 +1,52 @@
+name: NestJS CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hamza
+        ports:
+          - 5432:5432
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+
+
+      - name: Build Docker image
+        run: docker build -t nest-api .
+      - name: Login to DockerHub
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Tag image
+        run: docker tag nest-api ${{ secrets.DOCKER_USER }}/nest-api:latest
+      - name: Push image
+        run: docker push ${{ secrets.DOCKER_USER }}/nest-api:latest
